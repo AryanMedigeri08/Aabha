@@ -146,7 +146,7 @@ async def create_caption(
 
     # --- Generate audio ---
     try:
-        audio_bytes = caption_to_audio(final_caption, lang=tts_lang)
+        audio_bytes = await caption_to_audio(final_caption, lang=tts_lang)
         audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
     except (ValueError, RuntimeError) as e:
         raise HTTPException(
