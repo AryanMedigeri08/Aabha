@@ -28,6 +28,88 @@ export default function Home() {
   const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
+  // Web Audio API Sound Effects for Accessibility
+  const playBeep = (type) => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+
+      if (type === 'upload') {
+        // A short rising chime (pleasant upload feedback)
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, ctx.currentTime); // A4
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+        
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+      } else if (type === 'processing') {
+        // Low soft pulse indicating background work
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(220, ctx.currentTime); // A3
+        
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+        
+        osc.start();
+        osc.stop(ctx.currentTime + 0.4);
+      } else if (type === 'success') {
+        // Warm, harmonic completion tone (two-tone chord)
+        const now = ctx.currentTime;
+        [523.25, 659.25].forEach((freq) => { // C5 and E5 chord
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+          
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+          
+          osc.start();
+          osc.stop(now + 0.3);
+        });
+      } else if (type === 'error') {
+        // Low error warning tone (A2/G#2 double beep)
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.linearRampToValueAtTime(0.1, now + 0.1);
+        gain.gain.setValueAtTime(0.0, now + 0.15);
+        gain.gain.setValueAtTime(0.1, now + 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        
+        osc.start();
+        osc.stop(now + 0.35);
+      }
+    } catch (e) {
+      console.log("AudioContext failed or blocked:", e);
+    }
+  };
+
   // Clean up object URL to prevent memory leaks
   useEffect(() => {
     return () => {
@@ -36,6 +118,52 @@ export default function Home() {
       }
     };
   }, [imagePreviewUrl]);
+
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') {
+        if (e.key === 'Escape') {
+          document.activeElement.blur();
+        }
+        return;
+      }
+
+      // Shortcut: U or Alt+U - Trigger file uploader click
+      if (e.key.toLowerCase() === 'u' || (e.altKey && e.key.toLowerCase() === 'u')) {
+        e.preventDefault();
+        fileInputRef.current?.click();
+      }
+
+      // Shortcut: R or Alt+R - Replay main narration audio
+      if (e.key.toLowerCase() === 'r' || (e.altKey && e.key.toLowerCase() === 'r')) {
+        e.preventDefault();
+        if (audioPlayerRef.current) {
+          audioPlayerRef.current.currentTime = 0;
+          audioPlayerRef.current.playbackRate = playbackSpeed;
+          audioPlayerRef.current.play().catch(err => console.log(err));
+        }
+      }
+
+      // Shortcut: L or Alt+L - Toggle language
+      if (e.key.toLowerCase() === 'l' || (e.altKey && e.key.toLowerCase() === 'l')) {
+        e.preventDefault();
+        setLanguage((prev) => (prev === 'en' ? 'hi' : 'en'));
+      }
+
+      // Shortcut: S or Alt+S - Focus chat input
+      if (e.key.toLowerCase() === 's' || (e.altKey && e.key.toLowerCase() === 's')) {
+        e.preventDefault();
+        chatInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+    };
+  }, [playbackSpeed, chatHistory]);
 
   // Handle file input changes
   const handleFileChange = (e) => {
@@ -79,6 +207,7 @@ export default function Home() {
     setImagePreviewUrl(objectUrl);
     setChatHistory([]);
     setChatAudioSrc("");
+    playBeep('upload');
   };
 
   // Drag and drop event handlers
@@ -109,6 +238,7 @@ export default function Home() {
     setError(null);
     setResults(null);
     setLoading(true);
+    playBeep('processing');
 
     const formData = new FormData();
     formData.append('file', selectedFile);
@@ -128,6 +258,7 @@ export default function Home() {
 
       const data = await response.json();
       setResults(data);
+      playBeep('success');
 
       // Scroll to results once state is set
       setTimeout(() => {
@@ -136,6 +267,7 @@ export default function Home() {
         
         // Attempt autoplay for screen readers / accessibility narration
         if (audioPlayerRef.current) {
+          audioPlayerRef.current.playbackRate = playbackSpeed;
           audioPlayerRef.current.play().catch(() => {
             console.log("Autoplay blocked by browser. User interaction required.");
           });
@@ -145,6 +277,7 @@ export default function Home() {
     } catch (err) {
       console.error(err);
       setError(err.message || 'An unexpected error occurred. Please try again.');
+      playBeep('error');
     } finally {
       setLoading(false);
     }
@@ -170,6 +303,7 @@ export default function Home() {
     setChatQuestion("");
     setChatLoading(true);
     setError(null);
+    playBeep('processing');
 
     const newHistory = [...chatHistory, { sender: 'user', text: currentQuestion }];
     setChatHistory(newHistory);
@@ -196,6 +330,7 @@ export default function Home() {
       
       setChatHistory([...newHistory, { sender: 'ai', text: answer, audioSrc }]);
       setChatAudioSrc(audioSrc);
+      playBeep('success');
 
       setTimeout(() => {
         if (chatAudioPlayerRef.current) {
@@ -210,6 +345,7 @@ export default function Home() {
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to get answer. Please try again.');
+      playBeep('error');
     } finally {
       setChatLoading(false);
     }
