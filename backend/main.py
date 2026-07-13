@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse
 from PIL import Image
 import io
 
-from caption_model import generate_caption, load_model
+from caption_model import generate_caption, generate_answer, load_model
 from tts import caption_to_audio
 from translate import translate_caption
 
@@ -159,6 +159,90 @@ async def create_caption(
         content={
             "caption_en": caption_en,
             "caption_translated": caption_translated,
+            "lang": tts_lang,
+            "audio_base64": audio_base64,
+            "audio_format": "mp3",
+        }
+    )
+
+
+@app.post("/api/chat")
+async def chat_image(
+    file: UploadFile = File(..., description="Image file (JPG, PNG, or WEBP, max 10MB)"),
+    question: str = Form(..., description="User question about the image"),
+    lang: str = Form(default="en", description="Target language: 'en' or 'hi'"),
+):
+    """
+    Ask a question about an image and receive a translated answer + spoken audio.
+    """
+    # --- Validate file extension ---
+    if file.filename:
+        extension = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+        if extension not in ALLOWED_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported file type '.{extension}'. Please upload a JPG, PNG, or WEBP image.",
+            )
+
+    # --- Read and validate file size ---
+    file_bytes = await file.read()
+    if len(file_bytes) > MAX_FILE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File is too large. Maximum size is {MAX_FILE_SIZE_MB}MB.",
+        )
+
+    if len(file_bytes) == 0:
+        raise HTTPException(status_code=400, detail="The uploaded file is empty.")
+
+    # --- Open the image ---
+    try:
+        image = Image.open(io.BytesIO(file_bytes)).convert("RGB")
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Could not open the file as an image.",
+        )
+
+    # --- Generate answer ---
+    try:
+        answer_en = generate_answer(image, question)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Visual question answering failed: {str(e)}",
+        )
+
+    # --- Translate to Hindi if requested ---
+    answer_translated = None
+    if lang == "hi":
+        try:
+            answer_translated = translate_caption(answer_en, target_lang="hi")
+        except RuntimeError as e:
+            answer_translated = None
+            print(f"Translation warning: {e}")
+
+    # --- Determine the final answer for TTS ---
+    final_answer = answer_translated if answer_translated else answer_en
+    tts_lang = "hi" if (lang == "hi" and answer_translated) else "en"
+
+    # --- Generate audio ---
+    try:
+        audio_bytes = await caption_to_audio(final_answer, lang=tts_lang)
+        audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
+    except (ValueError, RuntimeError) as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Audio generation failed: {str(e)}",
+        )
+
+    # --- Return response ---
+    return JSONResponse(
+        content={
+            "answer_en": answer_en,
+            "answer_translated": answer_translated,
             "lang": tts_lang,
             "audio_base64": audio_base64,
             "audio_format": "mp3",

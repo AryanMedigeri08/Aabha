@@ -12,11 +12,18 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
+  const [chatHistory, setChatHistory] = useState([]);
+  const [chatQuestion, setChatQuestion] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatAudioSrc, setChatAudioSrc] = useState("");
 
   const fileInputRef = useRef(null);
   const audioPlayerRef = useRef(null);
   const resultsRef = useRef(null);
   const captionRef = useRef(null);
+  const chatAudioPlayerRef = useRef(null);
+  const chatBottomRef = useRef(null);
+  const chatInputRef = useRef(null);
 
   const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -70,6 +77,8 @@ export default function Home() {
     setSelectedFile(file);
     const objectUrl = URL.createObjectURL(file);
     setImagePreviewUrl(objectUrl);
+    setChatHistory([]);
+    setChatAudioSrc("");
   };
 
   // Drag and drop event handlers
@@ -150,6 +159,59 @@ export default function Home() {
     setPlaybackSpeed(speed);
     if (audioPlayerRef.current) {
       audioPlayerRef.current.playbackRate = speed;
+    }
+  };
+
+  const handleChatSubmit = async (e) => {
+    e.preventDefault();
+    if (!chatQuestion.trim() || !selectedFile || chatLoading) return;
+
+    const currentQuestion = chatQuestion.trim();
+    setChatQuestion("");
+    setChatLoading(true);
+    setError(null);
+
+    const newHistory = [...chatHistory, { sender: 'user', text: currentQuestion }];
+    setChatHistory(newHistory);
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('question', currentQuestion);
+    formData.append('lang', language);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Failed to process chat question.' }));
+        throw new Error(errorData.detail || `Server returned status code ${response.status}`);
+      }
+
+      const data = await response.json();
+      const answer = data.answer_translated || data.answer_en;
+      const audioSrc = `data:audio/mp3;base64,${data.audio_base64}`;
+      
+      setChatHistory([...newHistory, { sender: 'ai', text: answer, audioSrc }]);
+      setChatAudioSrc(audioSrc);
+
+      setTimeout(() => {
+        if (chatAudioPlayerRef.current) {
+          chatAudioPlayerRef.current.playbackRate = playbackSpeed;
+          chatAudioPlayerRef.current.play().catch(() => {
+            console.log("Autoplay blocked for chat narration.");
+          });
+        }
+        chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'Failed to get answer. Please try again.');
+    } finally {
+      setChatLoading(false);
     }
   };
 
@@ -383,6 +445,72 @@ export default function Home() {
                       Download Audio
                     </a>
                   </div>
+                </div>
+
+                {/* VQA Chat Panel */}
+                <div className="chat-interface-card">
+                  <h3 className="panel-subtitle">Ask questions about this image / सवाल पूछें</h3>
+                  
+                  <div className="chat-messages-box" aria-live="polite">
+                    {chatHistory.length === 0 ? (
+                      <p className="chat-placeholder">Ask anything! e.g., "What is in the background?" or "What color is the car?"</p>
+                    ) : (
+                      chatHistory.map((msg, idx) => (
+                        <div key={idx} className={`chat-message ${msg.sender}-message`}>
+                          <div className="message-content">
+                            <span className="message-sender-label">{msg.sender === 'user' ? 'You' : 'Aabha'}</span>
+                            <p className="message-text">{msg.text}</p>
+                          </div>
+                          {msg.audioSrc && (
+                            <button 
+                              type="button" 
+                              onClick={() => {
+                                setChatAudioSrc(msg.audioSrc);
+                                setTimeout(() => {
+                                  if (chatAudioPlayerRef.current) {
+                                    chatAudioPlayerRef.current.playbackRate = playbackSpeed;
+                                    chatAudioPlayerRef.current.play().catch(err => console.log(err));
+                                  }
+                                }, 50);
+                              }}
+                              className="chat-audio-btn"
+                              aria-label="Replay audio answer"
+                            >
+                              <Volume2 size={16} />
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    )}
+                    <div ref={chatBottomRef} />
+                  </div>
+                  
+                  <form onSubmit={handleChatSubmit} className="chat-input-form">
+                    <input 
+                      type="text" 
+                      id="chat-question-input"
+                      ref={chatInputRef}
+                      className="chat-text-input" 
+                      value={chatQuestion}
+                      onChange={(e) => setChatQuestion(e.target.value)}
+                      placeholder="Ask a question about the image..."
+                      disabled={chatLoading}
+                      aria-label="Type your question about the image"
+                    />
+                    <button 
+                      type="submit" 
+                      className="btn-chat-submit" 
+                      disabled={!chatQuestion.trim() || chatLoading}
+                    >
+                      {chatLoading ? 'Thinking...' : 'Ask'}
+                    </button>
+                  </form>
+                  
+                  <audio 
+                    ref={chatAudioPlayerRef} 
+                    src={chatAudioSrc} 
+                    style={{ display: 'none' }} 
+                  />
                 </div>
               </div>
             </div>
