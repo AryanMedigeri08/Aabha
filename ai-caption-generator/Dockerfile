@@ -1,22 +1,42 @@
+# ==========================================
+# Stage 1: Build the Next.js Frontend
+# ==========================================
+FROM node:18-alpine AS builder
+
+WORKDIR /app/frontend
+
+# Install dependencies first (for caching)
+COPY frontend/package.json ./
+RUN npm install
+
+# Copy source code and build static export
+COPY frontend/ ./
+RUN npm run build
+
+# ==========================================
+# Stage 2: Serve Backend & Static Frontend
+# ==========================================
 FROM python:3.10-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PyTorch CPU first to avoid heavy GPU installs
+# Install PyTorch CPU build first
 RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
-# Install requirements
-COPY backend/requirements.txt .
+# Install backend dependencies
+COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy source code
+# Copy backend source
 COPY backend/ ./backend/
-COPY frontend/ ./frontend/
+
+# Copy the built Next.js frontend static output
+COPY --from=builder /app/frontend/out ./frontend/out
 
 EXPOSE 8000
 

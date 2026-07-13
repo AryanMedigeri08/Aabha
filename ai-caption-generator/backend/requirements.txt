@@ -26,6 +26,7 @@ gTTS>=2.4.0
 # Translation (free, unofficial Google Translate wrapper)
 # To swap in the official API later, only translate.py needs to change.
 googletrans==4.0.0-rc1
+legacy-cgi; python_version >= '3.13'
 
 # Testing
 pytest>=7.0.0

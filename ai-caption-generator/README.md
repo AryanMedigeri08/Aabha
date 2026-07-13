@@ -8,11 +8,11 @@ app_port: 8000
 pinned: false
 ---
 
-# Aabha: Accessible AI Image Caption & Audio Narrator
+# Aabha: Accessible Next.js AI Image Caption & Audio Narrator
 
 Aabha is a web application designed to empower visually impaired individuals by instantly converting uploaded images into descriptive audio narration. The application utilizes a state-of-the-art vision-language model to generate captions, translates them if necessary, and uses text-to-speech to read them aloud.
 
-Built with a clean, fully accessible HTML5 frontend and powered by a FastAPI backend running CPU-optimized PyTorch models, Aabha is completely free to run and prioritizes user privacy (no images or audio are stored on disk).
+Aabha features a modern, fully accessible React **Next.js (App Router)** frontend and a high-performance **FastAPI** backend running CPU-optimized PyTorch models.
 
 ---
 
@@ -28,7 +28,7 @@ Built with a clean, fully accessible HTML5 frontend and powered by a FastAPI bac
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Accessible Semantic HTML5, Vanilla CSS (Glassmorphism theme), and Vanilla JavaScript.
+- **Frontend**: Next.js (App Router), React, Vanilla CSS (Glassmorphism theme), Lucide Icons.
 - **Backend API**: FastAPI (Python 3.10+).
 - **Core AI Model**: Hugging Face Transformers (`BLIP`), PyTorch (CPU-only build).
 - **Text-to-Speech**: `gTTS` (Google Text-to-Speech).
@@ -45,14 +45,20 @@ ai-caption-generator/
 │   │   ├── __init__.py
 │   │   └── test_pipeline.py     # Pipeline & endpoint integration tests
 │   ├── caption_model.py          # Model loading and generation wrapper
-│   ├── main.py                   # FastAPI server, CORS, Static files mount
+│   ├── main.py                   # FastAPI server & CORS setup
 │   ├── requirements.txt          # Python dependencies
 │   ├── translate.py              # Google Translate API abstraction
 │   └── tts.py                    # Text-To-Speech generation wrapper
 ├── frontend/
-│   ├── index.html                # Accessible landing page structure
-│   ├── script.js                 # Drag & drop, validation, fetch requests
-│   └── style.css                 # Premium high-contrast styling
+│   ├── src/
+│   │   └── app/
+│   │       ├── layout.js         # Next.js app wrapper & fonts
+│   │       ├── page.js           # Core React Single Page App UI
+│   │       └── globals.css       # Premium styles and resets
+│   ├── package.json              # Node.js dependencies
+│   ├── jsconfig.json             # JS path configs
+│   └── next.config.mjs           # Next.js config (Static exports & Dev proxies)
+├── Dockerfile                    # Multi-stage build setup
 └── README.md                     # Documentation & HF Space configuration
 ```
 
@@ -60,7 +66,7 @@ ai-caption-generator/
 
 ## 🚀 Setup & Installation (Local Execution)
 
-Follow these steps to run the project locally on your system.
+Running Aabha locally in development mode requires running both the FastAPI backend and the Next.js frontend in parallel.
 
 ### 1. Clone the repository
 ```bash
@@ -68,41 +74,53 @@ git clone https://github.com/Sakshisharan12/Aabha.git
 cd Aabha/ai-caption-generator
 ```
 
-### 2. Create and Activate a Virtual Environment
-**On Windows:**
+### 2. Configure and Run the Backend API
+
+**Create and Activate a Virtual Environment:**
+*On Windows:*
 ```bash
 python -m venv venv
 venv\Scripts\activate
 ```
-**On macOS/Linux:**
+*On macOS/Linux:*
 ```bash
 python -m venv venv
 source venv/bin/activate
 ```
 
-### 3. Install Dependencies
-To ensure the app runs quickly and for free, install the **CPU-only build of PyTorch** first:
+**Install Backend Dependencies:**
 ```bash
+# Install PyTorch CPU-only build first
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-```
 
-Then install the remaining dependencies:
-```bash
+# Install remaining dependencies
 pip install -r backend/requirements.txt
 ```
 
-### 4. Run the Application
-Start the FastAPI server:
+**Start Backend Server:**
 ```bash
 cd backend
 python main.py
 ```
-Or run directly via Uvicorn:
+The backend API is now running on **`http://localhost:8000`**.
+
+---
+
+### 3. Configure and Run the Next.js Frontend
+
+**Install Node Dependencies:**
+Open a new terminal session, navigate to the `frontend/` folder, and run:
 ```bash
-uvicorn main:app --reload --host 127.0.0.1 --port 8000
+cd ai-caption-generator/frontend
+npm install
 ```
 
-Once running, open your web browser and navigate to **`http://127.0.0.1:8000`**. The FastAPI server automatically mounts and serves the static frontend files.
+**Start Next.js Development Server:**
+```bash
+npm run dev
+```
+The frontend application is now running on **`http://localhost:3000`**. 
+Next.js automatically proxies API calls made to `/api/*` to the FastAPI backend on port `8000`.
 
 ---
 
@@ -120,44 +138,17 @@ python -m pytest tests/ -v
 
 ## ☁️ Hugging Face Spaces Deployment
 
-Aabha can be deployed directly to Hugging Face Spaces using Docker.
+Aabha can be deployed directly to Hugging Face Spaces using the provided multi-stage Docker build.
 
-### 1. Create a `Dockerfile`
-Create a `Dockerfile` at the root of `ai-caption-generator` folder:
-```dockerfile
-FROM python:3.10-slim
+Next.js is built as a **static HTML export** during the first Docker stage, and served directly by the FastAPI backend in the second stage. This removes the need for a separate Node.js server in production!
 
-WORKDIR /app
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install PyTorch CPU first to avoid heavy GPU installs
-RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
-
-# Install requirements
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy source code
-COPY backend/ ./backend/
-COPY frontend/ ./frontend/
-
-EXPOSE 8000
-
-WORKDIR /app/backend
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-### 2. Push to Hugging Face Spaces
+### Push to Hugging Face Spaces
 Create a new Space on Hugging Face with **Docker** SDK, then run:
 ```bash
 git init
 git remote add origin https://huggingface.co/spaces/<your-username>/aabha
 git add .
-git commit -m "Deploy to HF Spaces with Docker"
+git commit -m "Deploy to HF Spaces with Multi-Stage Docker"
 git push -u origin main -f
 ```
 

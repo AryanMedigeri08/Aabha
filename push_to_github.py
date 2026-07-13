@@ -23,13 +23,13 @@ def main():
     
     # 2. Ask for confirmation or proceed
     print("\nAdding files to git staging...")
-    code = run_cmd(["git", "add", "ai-caption-generator/"])
+    code = run_cmd(["git", "add", "."])
     if code != 0:
         print("Failed to add files.")
         return
         
     print("\nCommitting changes...")
-    code = run_cmd(["git", "commit", "-m", '"Implement accessible frontend UI, FastAPI static files serving, and deployment Dockerfile"'])
+    code = run_cmd(["git", "commit", "-m", '"Implement accessible Next.js React frontend, backend API updates, and deployment configuration"'])
     if code != 0:
         print("Commit failed (might be no changes to commit).")
     

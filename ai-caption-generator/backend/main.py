@@ -167,18 +167,18 @@ async def create_caption(
 
 
 # ---------------------------------------------------------------------------
-# Serve Static Frontend Files
+# Serve Static Frontend Files (Production Build)
 # ---------------------------------------------------------------------------
 from fastapi.staticfiles import StaticFiles
 
-# Resolve the absolute path to the frontend folder
+# Resolve the absolute path to the frontend build folder (out/)
 frontend_dir = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend"
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "out"
 )
 
-# Ensure the frontend folder exists before mounting
-os.makedirs(frontend_dir, exist_ok=True)
-app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+# Mount the Next.js static build if it exists
+if os.path.exists(frontend_dir):
+    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
 
 
 # ---------------------------------------------------------------------------
