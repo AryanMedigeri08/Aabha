@@ -503,6 +503,42 @@ body {
     outline: none;
 }
 
+.speed-control-container {
+    display: flex;
+    align-items: center;
+}
+
+.speed-select {
+    background: #1e293b;
+    color: var(--color-text);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    outline: none;
+    transition: var(--transition-smooth);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 28px;
+}
+
+.speed-select:hover {
+    background-color: #334155;
+    border-color: var(--color-primary);
+}
+
+.speed-select:focus-visible {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.4);
+}
+
 /* Customizing default browser audio components is hard, but we can make it match contrast */
 .native-audio::-webkit-media-controls-panel {
     background-color: #1e293b;

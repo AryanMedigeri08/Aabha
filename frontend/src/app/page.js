@@ -11,6 +11,7 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
 
   const fileInputRef = useRef(null);
   const audioPlayerRef = useRef(null);
@@ -142,6 +143,14 @@ export default function Home() {
 
   const handleRadioChange = (e) => {
     setLanguage(e.target.value);
+  };
+
+  const handleSpeedChange = (e) => {
+    const speed = parseFloat(e.target.value);
+    setPlaybackSpeed(speed);
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.playbackRate = speed;
+    }
   };
 
   const audioSrc = results ? `data:audio/mp3;base64,${results.audio_base64}` : '';
@@ -341,8 +350,27 @@ export default function Home() {
                       controls 
                       src={audioSrc}
                       ref={audioPlayerRef}
+                      onPlay={(e) => { e.target.playbackRate = playbackSpeed; }}
+                      onCanPlay={(e) => { e.target.playbackRate = playbackSpeed; }}
                       aria-label={`Spoken image caption narration: ${results.caption_translated || results.caption_en}`}
                     />
+                    
+                    <div className="speed-control-container">
+                      <label htmlFor="playback-speed-select" className="sr-only">Playback Speed</label>
+                      <select 
+                        id="playback-speed-select" 
+                        className="speed-select" 
+                        value={playbackSpeed}
+                        onChange={handleSpeedChange}
+                        aria-label="Select playback speed"
+                      >
+                        <option value="0.75">0.75x</option>
+                        <option value="1.0">1.0x (Normal)</option>
+                        <option value="1.25">1.25x</option>
+                        <option value="1.5">1.5x</option>
+                        <option value="2.0">2.0x</option>
+                      </select>
+                    </div>
                     
                     <a 
                       id="btn-download" 
