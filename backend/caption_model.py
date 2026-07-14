@@ -29,7 +29,8 @@ def load_model():
         "Salesforce/blip-image-captioning-base"
     )
     _model = BlipForConditionalGeneration.from_pretrained(
-        "Salesforce/blip-image-captioning-base"
+        "Salesforce/blip-image-captioning-base",
+        use_safetensors=True
     )
     # Set model to eval mode — disables dropout, etc.
     _model.eval()
