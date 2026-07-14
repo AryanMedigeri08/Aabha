@@ -34,3 +34,6 @@ yarn-error.log*
 *.swp
 .DS_Store
 Thumbs.db
+
+# Personal notes (not part of repo)
+NOTES.md
