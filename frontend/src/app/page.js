@@ -209,7 +209,11 @@ export default function Home() {
 
       if (e.key.toLowerCase() === 'l' || (e.altKey && e.key.toLowerCase() === 'l')) {
         e.preventDefault();
-        setLanguage((prev) => (prev === 'en' ? 'hi' : 'en'));
+        setLanguage((prev) => {
+          if (prev === 'en') return 'hi';
+          if (prev === 'hi') return 'mr';
+          return 'en';
+        });
       }
 
       if (e.key.toLowerCase() === 's' || (e.altKey && e.key.toLowerCase() === 's')) {
@@ -468,7 +472,7 @@ export default function Home() {
           {/* Language Selector */}
           <div className="controls-panel">
             <fieldset className="language-selector">
-              <legend className="section-title">Caption Language / भाषा चुनें</legend>
+              <legend className="section-title">Caption Language / भाषा निवडा</legend>
               <div className="radio-group">
                 <label className="radio-label" htmlFor="lang-en">
                   <input 
@@ -485,6 +489,14 @@ export default function Home() {
                   />
                   <span className="custom-radio"></span>
                   <span className="label-text">Hindi / हिंदी</span>
+                </label>
+                <label className="radio-label" htmlFor="lang-mr">
+                  <input 
+                    type="radio" id="lang-mr" name="language" value="mr" 
+                    checked={language === 'mr'} onChange={handleRadioChange}
+                  />
+                  <span className="custom-radio"></span>
+                  <span className="label-text">Marathi / मराठी</span>
                 </label>
               </div>
             </fieldset>
@@ -564,13 +576,14 @@ export default function Home() {
                   </div>
 
                   {results.caption_translated && (
-                    <div id="caption-translated-block" className="caption-block hindi-caption">
+                    <div id="caption-translated-block" className={`caption-block ${language === 'mr' ? 'marathi-caption' : 'hindi-caption'}`}>
                       <div className="caption-header">
-                        <span className="lang-tag">Hindi / हिंदी</span>
+                        <span className="lang-tag">{language === 'mr' ? 'Marathi / मराठी' : 'Hindi / हिंदी'}</span>
                       </div>
                       <p 
                         id="text-caption-translated" className="caption-text" tabIndex={0} 
-                        ref={language === 'hi' ? captionRef : null} aria-label="Hindi translation"
+                        ref={language === 'hi' || language === 'mr' ? captionRef : null} 
+                        aria-label={language === 'mr' ? "Marathi translation" : "Hindi translation"}
                       >
                         {results.caption_translated}
                       </p>

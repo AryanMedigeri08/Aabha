@@ -61,6 +61,11 @@ def generate_caption(image: Image.Image) -> str:
         if image.mode != "RGB":
             image = image.convert("RGB")
 
+        # Safeguard: if image size is extremely small, resize it to at least 224x224
+        # to prevent HuggingFace processor dimension mismatch errors.
+        if image.width < 32 or image.height < 32:
+            image = image.resize((224, 224), Image.Resampling.BILINEAR)
+
         # Preprocess: resize + normalize → PyTorch tensor
         inputs = _processor(image, return_tensors="pt")
 
@@ -103,6 +108,11 @@ def generate_answer(image: Image.Image, question: str) -> str:
         # Convert to RGB if not already
         if image.mode != "RGB":
             image = image.convert("RGB")
+
+        # Safeguard: if image size is extremely small, resize it to at least 224x224
+        # to prevent HuggingFace processor dimension mismatch errors.
+        if image.width < 32 or image.height < 32:
+            image = image.resize((224, 224), Image.Resampling.BILINEAR)
 
         # Format question prompt for BLIP
         prompt = f"Question: {question.strip()} Answer:"

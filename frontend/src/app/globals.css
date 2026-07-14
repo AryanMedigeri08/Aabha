@@ -588,7 +588,8 @@ body {
     line-height: 1.6;
 }
 
-.hindi-caption .lang-tag {
+.hindi-caption .lang-tag,
+.marathi-caption .lang-tag {
     background: var(--color-accent-bg);
     color: var(--color-accent);
     border: 1px solid rgba(232, 115, 74, 0.25);

@@ -13,7 +13,7 @@ async def caption_to_audio(text: str, lang: str = "en") -> bytes:
 
     Args:
         text: The caption text to speak. Must be non-empty.
-        lang: Language code — 'en' for English, 'hi' for Hindi.
+        lang: Language code — 'en' for English, 'hi' for Hindi, 'mr' for Marathi.
 
     Returns:
         Raw MP3 audio bytes.
@@ -29,7 +29,13 @@ async def caption_to_audio(text: str, lang: str = "en") -> bytes:
         # Choose natural neural voices
         # English: en-US-AriaNeural (confirmed working)
         # Hindi: hi-IN-SwaraNeural (confirmed working)
-        voice = "en-US-AriaNeural" if lang == "en" else "hi-IN-SwaraNeural"
+        # Marathi: mr-IN-AarohiNeural (confirmed working)
+        if lang == "en":
+            voice = "en-US-AriaNeural"
+        elif lang == "mr":
+            voice = "mr-IN-AarohiNeural"
+        else:
+            voice = "hi-IN-SwaraNeural"
         
         communicate = edge_tts.Communicate(text, voice)
         audio_bytes = b""

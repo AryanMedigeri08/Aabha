@@ -78,14 +78,14 @@ async def health_check():
 @app.post("/api/caption")
 async def create_caption(
     file: UploadFile = File(..., description="Image file (JPG, PNG, or WEBP, max 10MB)"),
-    lang: str = Form(default="en", description="Target language: 'en' or 'hi'"),
+    lang: str = Form(default="en", description="Target language: 'en', 'hi', or 'mr'"),
 ):
     """
     Upload an image and receive a caption + audio.
 
     - Validates file type and size.
     - Generates an English caption using BLIP.
-    - Optionally translates to Hindi.
+    - Optionally translates to Hindi or Marathi.
     - Generates TTS audio for the final caption.
     - Returns everything as JSON (audio is base64-encoded).
     """
@@ -130,11 +130,11 @@ async def create_caption(
             detail=f"Caption generation failed unexpectedly: {str(e)}",
         )
 
-    # --- Translate if Hindi is requested ---
+    # --- Translate if Hindi or Marathi is requested ---
     caption_translated = None
-    if lang == "hi":
+    if lang in ["hi", "mr"]:
         try:
-            caption_translated = translate_caption(caption_en, target_lang="hi")
+            caption_translated = translate_caption(caption_en, target_lang=lang)
         except RuntimeError as e:
             # Translation failed — still return the English caption + a warning
             caption_translated = None
@@ -142,7 +142,7 @@ async def create_caption(
 
     # --- Determine the final caption for TTS ---
     final_caption = caption_translated if caption_translated else caption_en
-    tts_lang = "hi" if (lang == "hi" and caption_translated) else "en"
+    tts_lang = lang if (lang in ["hi", "mr"] and caption_translated) else "en"
 
     # --- Generate audio ---
     try:
@@ -170,7 +170,7 @@ async def create_caption(
 async def chat_image(
     file: UploadFile = File(..., description="Image file (JPG, PNG, or WEBP, max 10MB)"),
     question: str = Form(..., description="User question about the image"),
-    lang: str = Form(default="en", description="Target language: 'en' or 'hi'"),
+    lang: str = Form(default="en", description="Target language: 'en', 'hi', or 'mr'"),
 ):
     """
     Ask a question about an image and receive a translated answer + spoken audio.
@@ -215,18 +215,18 @@ async def chat_image(
             detail=f"Visual question answering failed: {str(e)}",
         )
 
-    # --- Translate to Hindi if requested ---
+    # --- Translate to Hindi or Marathi if requested ---
     answer_translated = None
-    if lang == "hi":
+    if lang in ["hi", "mr"]:
         try:
-            answer_translated = translate_caption(answer_en, target_lang="hi")
+            answer_translated = translate_caption(answer_en, target_lang=lang)
         except RuntimeError as e:
             answer_translated = None
             print(f"Translation warning: {e}")
 
     # --- Determine the final answer for TTS ---
     final_answer = answer_translated if answer_translated else answer_en
-    tts_lang = "hi" if (lang == "hi" and answer_translated) else "en"
+    tts_lang = lang if (lang in ["hi", "mr"] and answer_translated) else "en"
 
     # --- Generate audio ---
     try:
