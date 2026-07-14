@@ -27,9 +27,9 @@ async def caption_to_audio(text: str, lang: str = "en") -> bytes:
 
     try:
         # Choose natural neural voices
-        # English: en-US-Multilingual-RyanNeural or en-US-AriaNeural
-        # Hindi: hi-IN-MadhurNeural or hi-IN-SwararaNeural
-        voice = "en-US-Multilingual-RyanNeural" if lang == "en" else "hi-IN-MadhurNeural"
+        # English: en-US-AriaNeural (confirmed working)
+        # Hindi: hi-IN-SwaraNeural (confirmed working)
+        voice = "en-US-AriaNeural" if lang == "en" else "hi-IN-SwaraNeural"
         
         communicate = edge_tts.Communicate(text, voice)
         audio_bytes = b""
