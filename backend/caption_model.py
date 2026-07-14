@@ -29,7 +29,8 @@ def load_model():
         "Salesforce/blip-image-captioning-base"
     )
     _model = BlipForConditionalGeneration.from_pretrained(
-        "Salesforce/blip-image-captioning-base"
+        "Salesforce/blip-image-captioning-base",
+        use_safetensors=True
     )
     # Set model to eval mode — disables dropout, etc.
     _model.eval()
@@ -73,3 +74,56 @@ def generate_caption(image: Image.Image) -> str:
 
     except Exception as e:
         raise ValueError(f"Failed to generate caption: {str(e)}")
+
+
+def generate_answer(image: Image.Image, question: str) -> str:
+    """
+    Generate an answer to a question about the given PIL Image.
+
+    Args:
+        image: A PIL Image in RGB mode.
+        question: A question string.
+
+    Returns:
+        The generated answer string.
+
+    Raises:
+        RuntimeError: If the model hasn't been loaded yet.
+        ValueError: If processing fails.
+    """
+    if _processor is None or _model is None:
+        raise RuntimeError(
+            "BLIP model not loaded. Call load_model() at app startup."
+        )
+
+    if not question or not question.strip():
+        raise ValueError("Question cannot be empty.")
+
+    try:
+        # Convert to RGB if not already
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+
+        # Format question prompt for BLIP
+        prompt = f"Question: {question.strip()} Answer:"
+
+        # Preprocess both image and text prompt
+        inputs = _processor(image, text=prompt, return_tensors="pt")
+
+        # Generate answer tokens
+        output_ids = _model.generate(**inputs, max_new_tokens=40)
+
+        # Decode token IDs
+        answer = _processor.decode(output_ids[0], skip_special_tokens=True)
+
+        # Clean prompt details out if returned by model
+        lower_answer = answer.lower()
+        if "answer:" in lower_answer:
+            answer = answer.split("answer:")[-1]
+        elif "answer" in lower_answer:
+            answer = answer.split("answer")[-1]
+
+        return answer.strip()
+
+    except Exception as e:
+        raise ValueError(f"Failed to generate answer: {str(e)}")

@@ -21,7 +21,7 @@ Pillow>=10.0.0
 torch
 
 # Text-to-Speech
-gTTS>=2.4.0
+edge-tts>=6.1.10
 
 # Translation (free, unofficial Google Translate wrapper)
 # To swap in the official API later, only translate.py needs to change.
