@@ -212,6 +212,15 @@ body {
     background: var(--color-primary-bg);
 }
 
+.upload-area.drag-over {
+    animation: borderPulse 1.5s infinite ease-in-out;
+}
+
+@keyframes borderPulse {
+    0%, 100% { border-color: var(--color-primary); opacity: 0.95; }
+    50% { border-color: var(--color-accent); opacity: 1; }
+}
+
 .upload-area:focus-visible {
     outline: 3px solid var(--color-primary);
     outline-offset: 2px;
