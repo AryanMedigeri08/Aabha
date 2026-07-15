@@ -733,16 +733,22 @@ body {
 
 .footer-braille-art {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     justify-content: center;
-    opacity: 0.3;
+    opacity: 0.4;
+    transition: var(--transition);
+}
+
+.footer-braille-art:hover {
+    opacity: 0.8;
+    transform: scale(1.08);
 }
 
 .footer-braille-art .dot {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background: var(--color-primary);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
 }
 
 .footer-container p {
