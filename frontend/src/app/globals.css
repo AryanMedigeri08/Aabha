@@ -888,7 +888,7 @@ body {
     font-family: var(--font-body);
     font-size: 0.95rem;
     outline: none;
-    transition: var(--transition);
+    transition: var(--transition-fast);
 }
 
 .chat-text-input::placeholder {
@@ -896,8 +896,9 @@ body {
 }
 
 .chat-text-input:focus {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(108, 60, 225, 0.1);
+    border-color: var(--color-primary-light);
+    background: #FFFFFF;
+    box-shadow: 0 0 0 4px rgba(108, 60, 225, 0.15);
 }
 
 .btn-chat-submit {
@@ -915,7 +916,12 @@ body {
 
 .btn-chat-submit:hover:not(:disabled) {
     background: var(--color-primary-light);
-    transform: translateY(-1px);
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 4px 12px rgba(108, 60, 225, 0.2);
+}
+
+.btn-chat-submit:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
 }
 
 .btn-chat-submit:disabled {
