@@ -184,11 +184,21 @@ body {
     box-shadow: var(--shadow-md);
     transition: var(--transition);
     position: relative;
+    overflow: hidden;
 }
 
 .card:hover {
     box-shadow: var(--shadow-hover);
     border-color: var(--color-primary-border);
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+    opacity: 0.8;
 }
 
 /* ============================================
