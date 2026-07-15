@@ -3,6 +3,7 @@ import './globals.css';
 export const metadata = {
   title: 'Aabha — Accessible AI Image Caption & Audio Narrator',
   description: 'Aabha - An accessible web app that instantly translates uploaded images into descriptive audio, empowering visually impaired users to perceive visual content effortlessly.',
+  keywords: ['accessibility', 'screen reader', 'AI image captioning', 'audio narrator', 'text-to-speech', 'visibly impaired assistance'],
 };
 
 export default function RootLayout({ children }) {
