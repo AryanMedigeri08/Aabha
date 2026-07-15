@@ -35,8 +35,4 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Personal notes (not part of repo)
-NOTES.md
 
-# Vision Transformer from scratch
-vision_transformer_scratch/
