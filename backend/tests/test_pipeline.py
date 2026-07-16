@@ -22,6 +22,11 @@ from translate import translate_caption
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+@pytest.fixture
+def anyio_backend():
+    return 'asyncio'
+
+
 @pytest.fixture(scope="session", autouse=True)
 def setup_model():
     """Load the BLIP model once for all tests."""
@@ -73,38 +78,57 @@ class TestCaptionModel:
 class TestTTS:
     """Tests for text-to-speech audio generation."""
 
-    def test_returns_mp3_bytes(self):
+    @pytest.mark.anyio
+    async def test_returns_mp3_bytes(self):
         """A valid English caption should produce non-empty MP3 bytes."""
-        audio = caption_to_audio("A dog running in a park.", lang="en")
+        audio = await caption_to_audio("A dog running in a park.", lang="en")
         assert isinstance(audio, bytes)
         assert len(audio) > 0
 
-    def test_hindi_audio(self):
+    @pytest.mark.anyio
+    async def test_hindi_audio(self):
         """Hindi text should produce non-empty MP3 bytes with lang='hi'."""
-        audio = caption_to_audio("एक कुत्ता पार्क में दौड़ रहा है।", lang="hi")
+        audio = await caption_to_audio("एक कुत्ता पार्क में दौड़ रहा है।", lang="hi")
         assert isinstance(audio, bytes)
         assert len(audio) > 0
 
-    def test_empty_text_raises_error(self):
+    @pytest.mark.anyio
+    async def test_marathi_audio(self):
+        """Marathi text should produce non-empty MP3 bytes with lang='mr'."""
+        audio = await caption_to_audio("एक कुत्रा बागेत धावत आहे.", lang="mr")
+        assert isinstance(audio, bytes)
+        assert len(audio) > 0
+
+    @pytest.mark.anyio
+    async def test_empty_text_raises_error(self):
         """Empty text should raise a ValueError."""
         with pytest.raises(ValueError, match="empty"):
-            caption_to_audio("")
+            await caption_to_audio("")
 
-    def test_whitespace_only_raises_error(self):
+    @pytest.mark.anyio
+    async def test_whitespace_only_raises_error(self):
         """Whitespace-only text should raise a ValueError."""
         with pytest.raises(ValueError, match="empty"):
-            caption_to_audio("   ")
+            await caption_to_audio("   ")
 
 
 # ---------------------------------------------------------------------------
 # Translation Tests
 # ---------------------------------------------------------------------------
 class TestTranslation:
-    """Tests for English-to-Hindi translation."""
+    """Tests for English-to-Hindi/Marathi translation."""
 
     def test_translates_to_hindi(self):
         """An English sentence should produce non-empty Hindi text."""
         result = translate_caption("A cat sitting on a mat.", target_lang="hi")
+        assert isinstance(result, str)
+        assert len(result) > 0
+        # The result should be different from the input (it's translated)
+        assert result != "A cat sitting on a mat."
+
+    def test_translates_to_marathi(self):
+        """An English sentence should produce non-empty Marathi text."""
+        result = translate_caption("A cat sitting on a mat.", target_lang="mr")
         assert isinstance(result, str)
         assert len(result) > 0
         # The result should be different from the input (it's translated)
@@ -122,19 +146,31 @@ class TestTranslation:
 class TestEndToEnd:
     """Integration test: image → caption → audio."""
 
-    def test_full_pipeline_english(self, sample_image):
+    @pytest.mark.anyio
+    async def test_full_pipeline_english(self, sample_image):
         """Full pipeline in English should produce a caption and audio."""
         caption = generate_caption(sample_image)
         assert len(caption) > 0
 
-        audio = caption_to_audio(caption, lang="en")
+        audio = await caption_to_audio(caption, lang="en")
         assert len(audio) > 0
 
-    def test_full_pipeline_hindi(self, sample_image):
+    @pytest.mark.anyio
+    async def test_full_pipeline_hindi(self, sample_image):
         """Full pipeline in Hindi should produce a translated caption and audio."""
         caption = generate_caption(sample_image)
         translated = translate_caption(caption, target_lang="hi")
         assert len(translated) > 0
 
-        audio = caption_to_audio(translated, lang="hi")
+        audio = await caption_to_audio(translated, lang="hi")
+        assert len(audio) > 0
+
+    @pytest.mark.anyio
+    async def test_full_pipeline_marathi(self, sample_image):
+        """Full pipeline in Marathi should produce a translated caption and audio."""
+        caption = generate_caption(sample_image)
+        translated = translate_caption(caption, target_lang="mr")
+        assert len(translated) > 0
+
+        audio = await caption_to_audio(translated, lang="mr")
         assert len(audio) > 0
