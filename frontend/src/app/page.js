@@ -95,6 +95,7 @@ export default function Home() {
   const [chatQuestion, setChatQuestion] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatAudioSrc, setChatAudioSrc] = useState("");
+  const [viewMode, setViewMode] = useState('simple');
 
   const fileInputRef = useRef(null);
   const audioPlayerRef = useRef(null);
@@ -538,10 +539,52 @@ export default function Home() {
         {/* ===== Results ===== */}
         {results && (
           <section id="results-section" ref={resultsRef} className="card results-fade-in" aria-labelledby="results-heading">
-            <h2 id="results-heading" className="section-title">
-              <AudioWaveformSvg />
-              Narration Results
-            </h2>
+            <div className="results-header-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
+              <h2 id="results-heading" className="section-title" style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
+                <AudioWaveformSvg />
+                Narration Results
+              </h2>
+              <div className="view-mode-toggle" style={{ display: 'flex', background: 'var(--bg-primary)', padding: '0.25rem', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                <button 
+                  type="button" 
+                  className={`btn-toggle ${viewMode === 'simple' ? 'active' : ''}`}
+                  onClick={() => setViewMode('simple')}
+                  style={{
+                    padding: '0.4rem 0.85rem',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontFamily: 'var(--font-heading)',
+                    fontWeight: 600,
+                    transition: 'var(--transition-fast)',
+                    background: viewMode === 'simple' ? 'var(--color-primary)' : 'transparent',
+                    color: viewMode === 'simple' ? 'var(--color-text-on-primary)' : 'var(--color-text-secondary)'
+                  }}
+                >
+                  Simple View
+                </button>
+                <button 
+                  type="button" 
+                  className={`btn-toggle ${viewMode === 'comparison' ? 'active' : ''}`}
+                  onClick={() => setViewMode('comparison')}
+                  style={{
+                    padding: '0.4rem 0.85rem',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontFamily: 'var(--font-heading)',
+                    fontWeight: 600,
+                    transition: 'var(--transition-fast)',
+                    background: viewMode === 'comparison' ? 'var(--color-primary)' : 'transparent',
+                    color: viewMode === 'comparison' ? 'var(--color-text-on-primary)' : 'var(--color-text-secondary)'
+                  }}
+                >
+                  Comparison View
+                </button>
+              </div>
+            </div>
             
             <div className="results-grid">
               {/* Image Preview */}
@@ -561,7 +604,24 @@ export default function Home() {
               {/* Captions & Audio */}
               <div className="output-panel">
                 <div className="caption-container">
-                  <h3 className="panel-subtitle">Generated Description</h3>
+                  {viewMode === 'comparison' && results.captions && (
+                    <div className="comparison-models-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                      <div className="model-caption-card" style={{ padding: '0.85rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+                        <span className="model-badge" style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-primary)', background: 'var(--color-primary-bg)', padding: '0.15rem 0.35rem', borderRadius: '4px', display: 'inline-block', marginBottom: '0.35rem' }}>BLIP</span>
+                        <p className="model-caption-text" style={{ fontSize: '0.85rem', color: 'var(--color-text)', margin: 0, fontStyle: 'italic' }}>&ldquo;{results.captions.blip}&rdquo;</p>
+                      </div>
+                      <div className="model-caption-card" style={{ padding: '0.85rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+                        <span className="model-badge" style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-accent)', background: 'var(--color-accent-bg)', padding: '0.15rem 0.35rem', borderRadius: '4px', display: 'inline-block', marginBottom: '0.35rem' }}>GIT</span>
+                        <p className="model-caption-text" style={{ fontSize: '0.85rem', color: 'var(--color-text)', margin: 0, fontStyle: 'italic' }}>&ldquo;{results.captions.git}&rdquo;</p>
+                      </div>
+                      <div className="model-caption-card" style={{ padding: '0.85rem', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+                        <span className="model-badge" style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: '#059669', background: 'rgba(5, 150, 105, 0.08)', padding: '0.15rem 0.35rem', borderRadius: '4px', display: 'inline-block', marginBottom: '0.35rem' }}>ViT-GPT2</span>
+                        <p className="model-caption-text" style={{ fontSize: '0.85rem', color: 'var(--color-text)', margin: 0, fontStyle: 'italic' }}>&ldquo;{results.captions.vit_gpt2}&rdquo;</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <h3 className="panel-subtitle">{viewMode === 'comparison' ? 'Fused Consensus Caption' : 'Generated Description'}</h3>
                   
                   <div className="caption-block english-caption">
                     <div className="caption-header">
