@@ -199,6 +199,52 @@ def compile_captions(captions: dict) -> str:
     return ". ".join(compiled_parts) + "."
 
 
+def generate_answer(image: Image.Image, question: str) -> str:
+    """
+    Generate an answer to a question about the given PIL Image using the loaded BLIP model.
+    """
+    if not _models_loaded:
+        raise RuntimeError("Models are not loaded. Call load_models() first.")
+
+    if not question or not question.strip():
+        raise ValueError("Question cannot be empty.")
+
+    try:
+        # Convert to RGB if not already
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+
+        # Safeguard: if image size is extremely small, resize it to at least 224x224
+        if image.width < 32 or image.height < 32:
+            image = image.resize((224, 224), Image.Resampling.BILINEAR)
+
+        # Format question prompt for BLIP
+        prompt = f"Question: {question.strip()} Answer:"
+
+        # Preprocess both image and text prompt
+        inputs = _blip_processor(image, text=prompt, return_tensors="pt").to(DEVICE)
+
+        # Generate answer tokens
+        with torch.no_grad():
+            output_ids = _blip_model.generate(**inputs, max_new_tokens=40)
+
+        # Decode token IDs
+        answer = _blip_processor.decode(output_ids[0], skip_special_tokens=True)
+
+        # Clean prompt details out if returned by model
+        lower_answer = answer.lower()
+        if "answer:" in lower_answer:
+            answer = answer.split("answer:")[-1]
+        elif "answer" in lower_answer:
+            answer = answer.split("answer")[-1]
+
+        return answer.strip()
+
+    except Exception as e:
+        raise ValueError(f"Failed to generate answer: {str(e)}")
+
+
+
 # Standalone test block
 if __name__ == "__main__":
     print("=" * 60)

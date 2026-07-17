@@ -14,7 +14,7 @@ import io
 import pytest
 from PIL import Image
 
-from caption_model import generate_caption, load_model
+from multi_caption_model import load_models, generate_all_captions, compile_captions, generate_answer
 from tts import caption_to_audio
 from translate import translate_caption
 
@@ -29,8 +29,8 @@ def anyio_backend():
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_model():
-    """Load the BLIP model once for all tests."""
-    load_model()
+    """Load the captioning models once for all tests."""
+    load_models()
 
 
 @pytest.fixture
@@ -51,25 +51,34 @@ def sample_rgba_image():
 # Caption Model Tests
 # ---------------------------------------------------------------------------
 class TestCaptionModel:
-    """Tests for BLIP image captioning."""
+    """Tests for multi-model image captioning and compilation."""
 
     def test_generates_nonempty_caption(self, sample_image):
-        """A valid image should produce a non-empty caption string."""
-        caption = generate_caption(sample_image)
-        assert isinstance(caption, str)
-        assert len(caption) > 0
+        """A valid image should produce non-empty captions from all models."""
+        captions = generate_all_captions(sample_image)
+        assert isinstance(captions, dict)
+        assert "blip" in captions
+        assert "git" in captions
+        assert "vit_gpt2" in captions
+        assert all(isinstance(c, str) for c in captions.values())
+
+        compiled = compile_captions(captions)
+        assert isinstance(compiled, str)
+        assert len(compiled) > 0
 
     def test_handles_rgba_image(self, sample_rgba_image):
         """RGBA images should be auto-converted to RGB without errors."""
-        caption = generate_caption(sample_rgba_image)
-        assert isinstance(caption, str)
-        assert len(caption) > 0
+        captions = generate_all_captions(sample_rgba_image)
+        compiled = compile_captions(captions)
+        assert isinstance(compiled, str)
+        assert len(compiled) > 0
 
     def test_handles_small_image(self):
         """Very small images (1x1) should still produce a caption."""
         tiny = Image.new("RGB", (1, 1), color=(0, 0, 0))
-        caption = generate_caption(tiny)
-        assert isinstance(caption, str)
+        captions = generate_all_captions(tiny)
+        compiled = compile_captions(captions)
+        assert isinstance(compiled, str)
 
 
 # ---------------------------------------------------------------------------
@@ -144,12 +153,13 @@ class TestTranslation:
 # Integration Test
 # ---------------------------------------------------------------------------
 class TestEndToEnd:
-    """Integration test: image → caption → audio."""
+    """Integration test: image -> caption -> audio."""
 
     @pytest.mark.anyio
     async def test_full_pipeline_english(self, sample_image):
         """Full pipeline in English should produce a caption and audio."""
-        caption = generate_caption(sample_image)
+        captions = generate_all_captions(sample_image)
+        caption = compile_captions(captions)
         assert len(caption) > 0
 
         audio = await caption_to_audio(caption, lang="en")
@@ -158,7 +168,8 @@ class TestEndToEnd:
     @pytest.mark.anyio
     async def test_full_pipeline_hindi(self, sample_image):
         """Full pipeline in Hindi should produce a translated caption and audio."""
-        caption = generate_caption(sample_image)
+        captions = generate_all_captions(sample_image)
+        caption = compile_captions(captions)
         translated = translate_caption(caption, target_lang="hi")
         assert len(translated) > 0
 
@@ -168,7 +179,8 @@ class TestEndToEnd:
     @pytest.mark.anyio
     async def test_full_pipeline_marathi(self, sample_image):
         """Full pipeline in Marathi should produce a translated caption and audio."""
-        caption = generate_caption(sample_image)
+        captions = generate_all_captions(sample_image)
+        caption = compile_captions(captions)
         translated = translate_caption(caption, target_lang="mr")
         assert len(translated) > 0
 

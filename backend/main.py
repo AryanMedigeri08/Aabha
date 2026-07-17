@@ -18,18 +18,18 @@ from fastapi.responses import JSONResponse
 from PIL import Image
 import io
 
-from caption_model import generate_caption, generate_answer, load_model
+from multi_caption_model import load_models, generate_all_captions, compile_captions, generate_answer
 from tts import caption_to_audio
 from translate import translate_caption
 
 
 # ---------------------------------------------------------------------------
-# App lifespan: load the BLIP model once when the server starts
+# App lifespan: load the models once when the server starts
 # ---------------------------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load the BLIP model at startup, clean up on shutdown."""
-    load_model()
+    """Load the captioning models at startup, clean up on shutdown."""
+    load_models()
     yield
     # Cleanup (if needed) goes here
 
@@ -71,8 +71,11 @@ ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 # ---------------------------------------------------------------------------
 @app.get("/api/health")
 async def health_check():
-    """Health check endpoint — returns 200 if the server and model are ready."""
-    return {"status": "healthy", "model": "blip-image-captioning-base"}
+    """Health check endpoint — returns 200 if the server and models are ready."""
+    return {
+        "status": "healthy",
+        "models": ["blip-image-captioning-base", "git-base", "vit-gpt2-image-captioning"]
+    }
 
 
 @app.post("/api/caption")
@@ -119,9 +122,10 @@ async def create_caption(
             detail="Could not open the file as an image. It may be corrupted or not a valid image format.",
         )
 
-    # --- Generate English caption ---
+    # --- Generate English captions from multiple models ---
     try:
-        caption_en = generate_caption(image)
+        captions = generate_all_captions(image)
+        caption_en = compile_captions(captions)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
@@ -157,7 +161,8 @@ async def create_caption(
     # --- Return the response ---
     return JSONResponse(
         content={
-            "caption_en": caption_en,
+            "caption_en": caption_en,  # Fused consensus description
+            "captions": captions,      # Individual model descriptions
             "caption_translated": caption_translated,
             "lang": tts_lang,
             "audio_base64": audio_base64,
